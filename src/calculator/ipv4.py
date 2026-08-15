@@ -45,7 +45,7 @@ def calculate_ipv4(ip_str: str, prefix: int) -> Dict[str, Any]:
         "reserved": "Yes" if network.is_reserved else "No",
         "unspecified": "Yes" if network.is_unspecified else "No",
         "global": "Yes" if network.is_global else "No",
-        "documentation": "Yes" if network.is_private and "192.0.2." in ip_str or "198.51.100." in ip_str or "203.0.113." in ip_str else "No"
+        "documentation": "Yes" if any(x in ip_str for x in ["192.0.2.", "198.51.100.", "203.0.113."]) else "No"
     }
 
     # Binary Representation

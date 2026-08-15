@@ -4,7 +4,7 @@ from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
     QComboBox, QPushButton, QTabWidget, QScrollArea, QFileDialog,
     QMessageBox, QListWidget, QSplitter, QGroupBox, QTableWidget,
-    QTableWidgetItem, QHeaderView, QMenu, QMenuBar
+    QTableWidgetItem, QHeaderView, QMenu, QMenuBar, QApplication
 )
 from PySide6.QtCore import Qt, QSize
 from PySide6.QtGui import QKeySequence, QAction, QClipboard
@@ -502,6 +502,27 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(self, "Error Parsing Input", clean_ip_or_network)
             return
 
+        # Determine actual version of the input
+        import ipaddress
+        ip_part = clean_ip_or_network.split('/')[0]
+        try:
+            ipaddress.IPv4Address(ip_part)
+            detected_version = "IPv4"
+        except ipaddress.AddressValueError:
+            try:
+                ipaddress.IPv6Address(ip_part)
+                detected_version = "IPv6"
+            except ipaddress.AddressValueError:
+                QMessageBox.critical(self, "Error Parsing Input", f"Invalid IP address format: {ip_part}")
+                return
+
+        calc_type = self.type_combo.currentText()
+        
+        # Auto-switch dropdown type if there is a mismatch (unless CIDR is selected)
+        if calc_type != "CIDR" and calc_type != detected_version:
+            self.type_combo.setCurrentText(detected_version)
+            calc_type = detected_version
+
         # If prefix is missing from IP field, parse default from dropdown
         if prefix is None:
             prefix_str = self.prefix_combo.currentText().replace('/', '')
@@ -510,7 +531,6 @@ class MainWindow(QMainWindow):
         else:
             full_input = clean_ip_or_network
 
-        calc_type = self.type_combo.currentText()
         try:
             if calc_type == "IPv4":
                 # Ensure it's IPv4
@@ -611,26 +631,13 @@ class MainWindow(QMainWindow):
     def run_cidr_calc(self, network_cidr: str):
         parts = network_cidr.split('/')
         ip_addr = parts[0]
-        prefix = int(parts[1]) if len(parts) == 2 else 24
+        prefix = int(parts[1]) if len(parts) == 2 else (24 if ":" not in ip_addr else 64)
         
-        data = calculate_cidr(ip_addr, prefix)
-        self.last_calculation_data = data
-
-        self.card_basic.update_val("ip_address", ip_addr)
-        self.card_basic.update_val("cidr", f"/{prefix}")
-        self.card_basic.update_val("subnet_mask", data["subnet_mask"])
-        self.card_basic.update_val("wildcard_mask", data["wildcard_mask"])
-        self.card_basic.update_val("network_address", data["network"])
-        self.card_basic.update_val("broadcast_address", data["broadcast"])
-        self.card_basic.update_val("first_host", data["first_host"])
-        self.card_basic.update_val("last_host", data["last_host"])
-        self.card_basic.update_val("total_addr", format_number(data["total_addresses"]))
-        self.card_basic.update_val("usable_hosts", format_number(data["usable_hosts"]))
-
-        # Check version for display
-        if data["version"] == 4:
+        import ipaddress
+        try:
+            ipaddress.IPv4Address(ip_addr)
             self.run_ipv4_calc(ip_addr, prefix)
-        else:
+        except ipaddress.AddressValueError:
             self.run_ipv6_calc(ip_addr, prefix)
 
     def calculate_subnets(self):
@@ -697,7 +704,6 @@ class MainWindow(QMainWindow):
             return
 
         try:
-            from PySide6.QtWidgets import QApplication
             txt = format_to_txt(self.last_calculation_data)
             QApplication.clipboard().setText(txt)
             QMessageBox.information(self, "Copied", "Subnet calculation results copied to clipboard.")
@@ -738,7 +744,7 @@ class MainWindow(QMainWindow):
         text = item.text()
         # format: "192.168.1.0/24 (IPv4)"
         if " (" in text:
-            input_val, type_part = text.split(" (")
+            input_val, type_part = text.rsplit(" (", 1)
             type_val = type_part.replace(")", "")
             self.ip_input.setText(input_val)
             self.type_combo.setCurrentText(type_val)
