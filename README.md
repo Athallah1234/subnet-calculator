@@ -220,7 +220,7 @@ Proyek mengikuti arsitektur **layered / separation of concerns**:
 
 ```bash
 git clone https://github.com/Athallah1234/subnet-calculator.git
-cd simple-subnet-calculator
+cd subnet-calculator
 ```
 
 Atau unduh ZIP dari GitHub dan ekstrak ke folder pilihan Anda.
