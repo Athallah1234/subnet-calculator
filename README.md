@@ -219,7 +219,7 @@ Proyek mengikuti arsitektur **layered / separation of concerns**:
 ### 1. Clone Repositori
 
 ```bash
-git clone https://github.com/username/simple-subnet-calculator.git
+git clone https://github.com/Athallah1234/subnet-calculator.git
 cd simple-subnet-calculator
 ```
 
@@ -775,7 +775,7 @@ Kontribusi sangat disambut! Berikut panduan singkatnya:
 
 ```bash
 # 1. Fork repositori, lalu clone
-git clone https://github.com/YOUR-USERNAME/simple-subnet-calculator.git
+git clone https://github.com/Athallah1234/subnet-calculator.git
 
 # 2. Buat branch baru
 git checkout -b feature/nama-fitur
